@@ -124,11 +124,11 @@ export default function Products({ user }) {
 
                 {/* Smooth hover transition for Add to Cart */}
                 <button
-                  onClick={() => addToCart(p)}
-                  className="absolute bottom-4 right-4 opacity-0 translate-y-3 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300 ease-out px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700"
-                >
-                  Add to Cart
-                </button>
+  onClick={() => addToCart(p)}
+  className="absolute bottom-4 right-4 px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 transition-all duration-200"
+>
+  Add to Cart
+</button>
               </div>
             </div>
           );
