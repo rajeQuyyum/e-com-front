@@ -6,7 +6,8 @@ export default function Products({ user }) {
   const [loading, setLoading] = useState(true);
   const [viewer, setViewer] = useState({ open: false, images: [], index: 0 });
 
-  const BASE_URL = API.replace("/api", "");
+  // ✅ Ensure BASE_URL always resolves correctly (local + Vercel)
+  const BASE_URL = import.meta.env.VITE_BACKEND_URL?.replace(/\/$/, "") || API.replace("/api", "");
 
   useEffect(() => {
     fetchProducts();
@@ -19,7 +20,6 @@ export default function Products({ user }) {
       setProducts(data);
     } catch (err) {
       console.error("Error loading products:", err);
-      // alert("check your connections");
     } finally {
       setLoading(false);
     }
@@ -88,49 +88,51 @@ export default function Products({ user }) {
 
       {/* Product List */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        {products.map((p) => (
-          <div
-            key={p._id}
-            className="group bg-white rounded shadow p-4 hover:shadow-lg transition relative overflow-hidden"
-          >
-            {/* Product Image */}
+        {products.map((p) => {
+          const imgSrc = p.images?.[0]
+            ? `${BASE_URL}${p.images[0]}`
+            : "/placeholder.png";
+
+          return (
             <div
-              className="h-48 w-full bg-gray-100 flex items-center justify-center mb-3 rounded cursor-pointer"
-              onClick={() => openViewer(p.images, 0)}
+              key={p._id}
+              className="group bg-white rounded shadow p-4 hover:shadow-lg transition relative overflow-hidden"
             >
-              {p.images && p.images[0] ? (
+              {/* Product Image */}
+              <div
+                className="h-48 w-full bg-gray-100 flex items-center justify-center mb-3 rounded cursor-pointer"
+                onClick={() => openViewer(p.images, 0)}
+              >
                 <img
-                  src={`${BASE_URL}${p.images[0]}`}
+                  src={imgSrc}
                   alt={p.title}
                   className="max-h-44 rounded object-cover"
                   onError={(e) => (e.target.src = "/placeholder.png")}
                 />
-              ) : (
-                <span className="text-gray-400">No image</span>
-              )}
-            </div>
-
-            {/* Product Info */}
-            <h4 className="font-semibold truncate">{p.title}</h4>
-            <p className="text-sm text-gray-600 my-2 line-clamp-2">
-              {p.description}
-            </p>
-
-            <div className="flex items-center justify-between mt-4">
-              <div className="text-lg font-bold text-blue-700">
-                ₦{p.price.toFixed(2)}
               </div>
 
-              {/* Smooth hover transition for Add to Cart */}
-              <button
-                onClick={() => addToCart(p)}
-                className="absolute bottom-4 right-4 opacity-0 translate-y-3 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300 ease-out px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700"
-              >
-                Add to Cart
-              </button>
+              {/* Product Info */}
+              <h4 className="font-semibold truncate">{p.title}</h4>
+              <p className="text-sm text-gray-600 my-2 line-clamp-2">
+                {p.description}
+              </p>
+
+              <div className="flex items-center justify-between mt-4">
+                <div className="text-lg font-bold text-blue-700">
+                  ₦{p.price.toFixed(2)}
+                </div>
+
+                {/* Smooth hover transition for Add to Cart */}
+                <button
+                  onClick={() => addToCart(p)}
+                  className="absolute bottom-4 right-4 opacity-0 translate-y-3 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300 ease-out px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700"
+                >
+                  Add to Cart
+                </button>
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {/* ✅ Image Viewer Modal */}
