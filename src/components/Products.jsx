@@ -1,13 +1,12 @@
 import React, { useEffect, useState } from "react";
 import { API } from "../api";
-// import socket from "../utils/socket"; // optional: for live cart updates
 
 export default function Products({ user }) {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [viewer, setViewer] = useState({ open: false, images: [], index: 0 });
 
-  // ✅ Dynamic backend URL (local or Render)
+  // BASE_URL only used for images (local or deployed)
   const BASE_URL =
     import.meta.env.VITE_BACKEND_URL?.replace(/\/$/, "") ||
     API.replace("/api", "");
@@ -32,27 +31,42 @@ export default function Products({ user }) {
     if (!user) return alert("Please log in first");
 
     try {
+      // fetch existing cart (if server returns 404 or error, fallback to empty cart)
       const get = await fetch(`${API}/cart/${user._id}`);
-      const cart = get.ok ? await get.json() : { items: [] };
+      let cart;
+      if (get.ok) {
+        cart = await get.json();
+      } else {
+        // debug: show server message if any
+        const text = await get.text().catch(() => null);
+        console.warn("GET /cart returned", get.status, text);
+        cart = { items: [] };
+      }
 
       const items = cart.items || [];
       const found = items.find(
         (i) => i.productId === p._id || (i.productId && i.productId._id === p._id)
       );
-      if (found) found.qty += 1;
-      else items.push({ productId: p._id, qty: 1 });
 
-      await fetch(`${API}/cart/${user._id}`, {
+      if (found) {
+        found.qty = (found.qty || 0) + 1;
+      } else {
+        items.push({ productId: p._id, qty: 1 });
+      }
+
+      // POST updated cart
+      const res = await fetch(`${API}/cart/${user._id}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ items }),
       });
 
-      // 🔔 Optional real-time cart update
-      socket.emit("cartUpdated", {
-        userId: user._id,
-        count: items.reduce((s, i) => s + i.qty, 0),
-      });
+      if (!res.ok) {
+        // read server response for debugging
+        const errText = await res.text().catch(() => null);
+        console.error("Failed to update cart:", res.status, errText);
+        throw new Error("Server rejected cart update");
+      }
 
       alert("✅ Added to cart!");
     } catch (err) {
@@ -98,9 +112,7 @@ export default function Products({ user }) {
       {/* Product List */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         {products.map((p) => {
-          const imgSrc = p.images?.[0]
-            ? `${BASE_URL}${p.images[0]}`
-            : "/placeholder.png";
+          const imgSrc = p.images?.[0] ? `${BASE_URL}${p.images[0]}` : "/placeholder.png";
 
           return (
             <div
@@ -143,7 +155,7 @@ export default function Products({ user }) {
         })}
       </div>
 
-      {/* ✅ Image Viewer Modal */}
+      {/* Image Viewer Modal */}
       {viewer.open && (
         <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50">
           <button
@@ -188,9 +200,7 @@ export default function Products({ user }) {
                     alt="thumb"
                     onClick={() => setViewer((v) => ({ ...v, index: idx }))}
                     className={`w-16 h-16 object-cover rounded cursor-pointer border ${
-                      viewer.index === idx
-                        ? "border-blue-500"
-                        : "border-transparent"
+                      viewer.index === idx ? "border-blue-500" : "border-transparent"
                     }`}
                   />
                 ))}
