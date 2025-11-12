@@ -1,0 +1,4 @@
+# .env
+# .env (used on Render)
+VITE_BACKEND_URL=https://e-come-6ym9.onrender.com
+
