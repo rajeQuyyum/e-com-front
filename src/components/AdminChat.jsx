@@ -327,7 +327,7 @@ export default function AdminChat({ adminToken }) {
       </>
     ) : (
       <div className="flex items-center justify-center text-gray-500 flex-1 text-center p-4">
-        Select a user to chat
+        Select a user to chat.
       </div>
     )}
   </div>
