@@ -1,13 +1,16 @@
 import React, { useEffect, useState } from "react";
 import { API } from "../api";
+// import socket from "../utils/socket"; // optional: for live cart updates
 
 export default function Products({ user }) {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [viewer, setViewer] = useState({ open: false, images: [], index: 0 });
 
-  // ✅ Ensure BASE_URL always resolves correctly (local + Vercel)
-  const BASE_URL = import.meta.env.VITE_BACKEND_URL?.replace(/\/$/, "") || API.replace("/api", "");
+  // ✅ Dynamic backend URL (local or Render)
+  const BASE_URL =
+    import.meta.env.VITE_BACKEND_URL?.replace(/\/$/, "") ||
+    API.replace("/api", "");
 
   useEffect(() => {
     fetchProducts();
@@ -30,7 +33,7 @@ export default function Products({ user }) {
 
     try {
       const get = await fetch(`${API}/cart/${user._id}`);
-      const cart = await get.json();
+      const cart = get.ok ? await get.json() : { items: [] };
 
       const items = cart.items || [];
       const found = items.find(
@@ -43,6 +46,12 @@ export default function Products({ user }) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ items }),
+      });
+
+      // 🔔 Optional real-time cart update
+      socket.emit("cartUpdated", {
+        userId: user._id,
+        count: items.reduce((s, i) => s + i.qty, 0),
       });
 
       alert("✅ Added to cart!");
@@ -122,13 +131,12 @@ export default function Products({ user }) {
                   ₦{p.price.toFixed(2)}
                 </div>
 
-                {/* Smooth hover transition for Add to Cart */}
                 <button
-  onClick={() => addToCart(p)}
-  className="absolute bottom-4 right-4 px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 transition-all duration-200"
->
-  Add to Cart
-</button>
+                  onClick={() => addToCart(p)}
+                  className="absolute bottom-4 right-4 px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 transition-all duration-200"
+                >
+                  Add to Cart
+                </button>
               </div>
             </div>
           );
@@ -153,7 +161,6 @@ export default function Products({ user }) {
                 className="max-h-[80vh] max-w-[90vw] rounded-lg shadow-lg object-contain"
               />
 
-              {/* Prev & Next Buttons */}
               {viewer.images.length > 1 && (
                 <>
                   <button
@@ -172,7 +179,6 @@ export default function Products({ user }) {
               )}
             </div>
 
-            {/* Thumbnail Strip */}
             {viewer.images.length > 1 && (
               <div className="flex gap-2 mt-2 overflow-x-auto">
                 {viewer.images.map((img, idx) => (
