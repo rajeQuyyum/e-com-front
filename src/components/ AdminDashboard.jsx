@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { API } from "../api";
+import { API, BASE_URL } from "../api"; // ✅ Added BASE_URL import
 import { useNavigate } from "react-router-dom";
 import AdminChat from "./AdminChat";
 
@@ -14,7 +14,7 @@ export default function AdminDashboard({ adminToken }) {
   // NEW: user profile modal state
   const [showUserProfileModal, setShowUserProfileModal] = useState(false);
   const [profileLoading, setProfileLoading] = useState(false);
-  const [selectedUserProfile, setSelectedUserProfile] = useState(null); // will hold combined profile/user data
+  const [selectedUserProfile, setSelectedUserProfile] = useState(null);
 
   // Notification form
   const [title, setTitle] = useState("");
@@ -197,11 +197,7 @@ export default function AdminDashboard({ adminToken }) {
     navigate("/admin");
   }
 
-  // -----------------------------
   // NEW: User profile modal helpers
-  // -----------------------------
-  // When admin clicks on a user, fetch that user's profile (if exists) and show modal.
-  // If profile endpoint returns nothing, fall back to user document fields.
   async function openUserProfile(userObj) {
     if (!userObj || !userObj._id) return;
     setProfileLoading(true);
@@ -210,10 +206,8 @@ export default function AdminDashboard({ adminToken }) {
 
     try {
       const res = await fetch(`${API}/profile/${userObj._id}`);
-      // assume profile endpoint returns 200 + profile JSON or 404/empty
       if (res.ok) {
         const profileData = await res.json();
-        // Merge profileData with base user data to ensure we show anything available.
         const combined = {
           _id: userObj._id,
           email: userObj.email || profileData.email || "",
@@ -226,7 +220,6 @@ export default function AdminDashboard({ adminToken }) {
         };
         setSelectedUserProfile(combined);
       } else {
-        // profile not found; just use user document fields
         const combined = {
           _id: userObj._id,
           email: userObj.email || "",
@@ -323,7 +316,7 @@ export default function AdminDashboard({ adminToken }) {
               <div className="flex items-center gap-3">
                 {p.images?.[0] && (
                   <img
-                    src={`http://localhost:5001${p.images[0]}`}
+                    src={`${BASE_URL}${p.images[0]}`} // ✅ Fixed here
                     className="w-12 h-12 object-cover rounded"
                   />
                 )}
@@ -509,7 +502,7 @@ export default function AdminDashboard({ adminToken }) {
                     <div className="flex items-center gap-3">
                       {item.productId?.images?.[0] && (
                         <img
-                          src={`http://localhost:5001${item.productId.images[0]}`}
+                          src={`${BASE_URL}${item.productId.images[0]}`} // ✅ Fixed here too
                           alt={item.productId?.title}
                           className="w-12 h-12 object-cover rounded"
                         />
@@ -556,7 +549,7 @@ export default function AdminDashboard({ adminToken }) {
         </div>
       )}
 
-      {/* NEW: USER PROFILE MODAL */}
+      {/* USER PROFILE MODAL */}
       {showUserProfileModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg shadow-lg w-full max-w-lg p-6 relative">
@@ -641,4 +634,3 @@ export default function AdminDashboard({ adminToken }) {
     </div>
   );
 }
-
