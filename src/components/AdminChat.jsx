@@ -196,15 +196,15 @@ export default function AdminChat({ adminToken }) {
     new Date(ts).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 
   return (
-    <div className="flex gap-4 bg-white rounded shadow p-4 h-[500px]">
+    <div className="flex flex-col md:flex-row gap-4 bg-white rounded shadow p-4 h-auto md:h-[500px]">
       {/* Left Panel */}
-      <div className="w-1/3 border-r overflow-auto">
-        <h4 className="font-semibold mb-2">User Chats</h4>
+      <div className="w-full md:w-1/3 border-r md:border-r border-b md:border-b-0 pb-4 md:pb-0 overflow-auto">
+        <h4 className="font-semibold mb-2 text-center md:text-left">User Chats</h4>
         {users.map((u) => (
           <div
             key={u.id}
             onClick={() => loadMessages(u)}
-            className={`cursor-pointer px-2 py-1 rounded mb-1 ${
+            className={`cursor-pointer px-2 py-1 rounded mb-1 text-center md:text-left ${
               selectedUser?.id === u.id
                 ? "bg-blue-600 text-white"
                 : "hover:bg-gray-100"
@@ -216,15 +216,15 @@ export default function AdminChat({ adminToken }) {
       </div>
 
       {/* Chat Panel */}
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col w-full">
         {selectedUser ? (
           <>
-            <div className="border-b pb-2 mb-2 flex justify-between items-center">
-              <span className="font-semibold">
+            <div className="border-b pb-2 mb-2 flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+              <span className="font-semibold text-center md:text-left">
                 Chat with: {selectedUser.name || selectedUser.email}
               </span>
 
-              <div className="space-x-2">
+              <div className="flex flex-wrap justify-center md:justify-end gap-2">
                 <button
                   onClick={clearChat}
                   className="bg-yellow-500 hover:bg-yellow-600 text-white px-2 py-1 rounded text-sm"
@@ -248,12 +248,13 @@ export default function AdminChat({ adminToken }) {
 
             <div
               ref={boxRef}
-              className="flex-1 overflow-auto border p-2 rounded mb-2 space-y-2"
+              className="flex-1 border p-2 rounded mb-2 space-y-2 overflow-y-auto"
+               style={{ maxHeight: "300px", minHeight: "200px" }}
             >
               {messages.map((m) => (
                 <div
           key={m._id}
-        className={`p-2 rounded max-w-[70%] wrap-break-word whitespace-pre-wrap ${
+        className={`p-2 rounded max-w-[85%] md:max-w-[70%] wrap-break-word whitespace-pre-wrap ${
         m.from === "admin"
          ? "bg-green-500 text-white self-end ml-auto"
          : "bg-gray-200 text-black"
@@ -295,7 +296,7 @@ export default function AdminChat({ adminToken }) {
               )}
             </div>
 
-            <form onSubmit={sendMessage} className="flex gap-2 items-center mt-auto">
+            <form onSubmit={sendMessage} className="flex flex-col sm:flex-row gap-2 items-center mt-auto">
               <input
                 type="file"
                 accept="image/*"
@@ -317,7 +318,7 @@ export default function AdminChat({ adminToken }) {
             </form>
           </>
         ) : (
-          <div className="flex items-center justify-center text-gray-500 flex-1">
+          <div className="flex items-center justify-center text-gray-500 flex-1 text-center p-4">
             Select a user to chat
           </div>
         )}
