@@ -554,7 +554,7 @@ async function deleteProduct(id) {
         <div>
           <div className="font-semibold">{u.email}</div>
           <div className="text-sm text-gray-600">
-            Joined: {new Date(u.createdAt).toLocaleDateString()}
+            {/* Joined: {new Date(u.createdAt).toLocaleDateString()} */}
           </div>
         </div>
 
