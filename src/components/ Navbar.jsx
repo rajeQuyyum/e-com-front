@@ -149,11 +149,29 @@ export default function Navbar({ user, adminToken }) {
 
         {/* 🍔 Mobile Menu Toggle */}
         <button
-          className="md:hidden text-white focus:outline-none"
-          onClick={() => setShowMenu((prev) => !prev)}
-        >
-          {showMenu ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-        </button>
+  className="md:hidden focus:outline-none relative"
+  onClick={() => setShowMenu((prev) => !prev)}
+>
+  {showMenu ? (
+    <X
+      className={`w-6 h-6 transition-colors ${
+        hasNewNotif || hasNewChat ? "text-white" : "text-white"
+      }`}
+    />
+  ) : (
+    <Menu
+      className={`w-6 h-6 transition-colors ${
+        hasNewNotif || hasNewChat ? "text-white" : "text-white"
+      }`}
+    />
+  )}
+
+  {/* Small red dot indicator (extra visual cue) */}
+  {(hasNewNotif || hasNewChat) && !showMenu && (
+    <span className="absolute top-0 right-0 w-2.5 h-2.5 bg-red-500 rounded-full border border-white"></span>
+  )}
+</button>
+
 
         {/* 🔘 Links */}
         <div
