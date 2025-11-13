@@ -315,11 +315,17 @@ export default function AdminDashboard({ adminToken }) {
             >
               <div className="flex items-center gap-3">
                 {p.images?.[0] && (
-                  <img
-                    src={`${BASE_URL}${p.images[0]}`} // ✅ Fixed here
-                    className="w-12 h-12 object-cover rounded"
-                  />
-                )}
+  <img
+    src={
+      p.images[0].startsWith("http")
+        ? p.images[0]
+        : `${BASE_URL}${p.images[0]}`
+    }
+    alt={p.title}
+    className="w-12 h-12 object-cover rounded"
+  />
+)}
+
                 <div>
                   <div className="font-semibold">{p.title}</div>
                   <div className="text-sm text-gray-500">₦{p.price}</div>
@@ -500,13 +506,18 @@ export default function AdminDashboard({ adminToken }) {
                     className="flex items-center justify-between border-b pb-2"
                   >
                     <div className="flex items-center gap-3">
-                      {item.productId?.images?.[0] && (
-                        <img
-                          src={`${BASE_URL}${item.productId.images[0]}`} // ✅ Fixed here too
-                          alt={item.productId?.title}
-                          className="w-12 h-12 object-cover rounded"
-                        />
-                      )}
+                     {item.productId?.images?.[0] && (
+  <img
+    src={
+      item.productId.images[0].startsWith("http")
+        ? item.productId.images[0]
+        : `${BASE_URL}${item.productId.images[0]}`
+    }
+    alt={item.productId?.title}
+    className="w-12 h-12 object-cover rounded"
+  />
+)}
+
                       <div>
                         <div className="font-semibold text-gray-800">
                           {item.productId?.title || "Unknown Product"}
