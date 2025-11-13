@@ -86,6 +86,26 @@ async function uploadProduct(e) {
   }
 }
 
+// ⭐ DELETE PRODUCT (copy and paste below uploadProduct)
+async function deleteProduct(id) {
+  if (!window.confirm("Delete this product?")) return;
+
+  try {
+    const res = await fetch(`${API}/products/${id}`, {
+      method: "DELETE",
+    });
+
+    if (!res.ok) throw new Error("Delete failed");
+
+    alert("🗑️ Product deleted");
+    loadData();
+  } catch (err) {
+    console.error("Delete product error:", err);
+    alert("❌ Failed to delete product");
+  }
+}
+
+
   // Notifications
   async function saveNotification() {
     if (!title || !body) return alert("Please fill title and message");
@@ -519,6 +539,57 @@ async function uploadProduct(e) {
           </div>
         </div>
       )}
+
+
+      {/* USERS LIST */}
+<div className="bg-white p-4 rounded shadow mb-6">
+  <h4 className="font-semibold mb-3">All Users</h4>
+
+  <div className="max-h-80 overflow-auto space-y-2">
+    {users.map((u) => (
+      <div
+        key={u._id}
+        className="border p-2 rounded flex justify-between items-center"
+      >
+        <div>
+          <div className="font-semibold">{u.email}</div>
+          <div className="text-sm text-gray-600">
+            Joined: {new Date(u.createdAt).toLocaleDateString()}
+          </div>
+        </div>
+
+        <div className="flex gap-2">
+          <button
+            onClick={() => openUserProfile(u)}
+            className="text-blue-600 hover:text-blue-800"
+          >
+            👤
+          </button>
+
+          <button
+            onClick={() => {
+              // find user's cart
+              const userCart = carts.find((c) => c.userId?._id === u._id);
+              if (!userCart) return alert("This user has no cart");
+              openCartModal(userCart);
+            }}
+            className="text-green-600 hover:text-green-800"
+          >
+            🛒
+          </button>
+
+          <button
+            onClick={() => deleteUser(u._id)}
+            className="text-red-600 hover:text-red-800"
+          >
+            🗑️
+          </button>
+        </div>
+      </div>
+    ))}
+  </div>
+</div>
+
 
       {/* USER PROFILE MODAL */}
       {showUserProfileModal && (
