@@ -12,17 +12,16 @@ export default function Chat({ user }) {
   const joinedRef = useRef(false);
   const room = user?._id || "guest";
 
-  // ✅ Connect to socket only once
+  // ✅ Connect socket only once
   useEffect(() => {
     if (joinedRef.current) return;
     joinedRef.current = true;
 
-    // 🔧 Automatically handles both local + deployed environments
     const socket = io(SOCKET_URL, { transports: ["websocket"] });
     socketRef.current = socket;
     socket.emit("join", room);
 
-    // ✅ Listen for real-time messages
+    // ✅ Receive messages
     socket.on("receiveMessage", (msg) => {
       if (msg.room === room) {
         setMessages((prev) =>
@@ -80,16 +79,20 @@ export default function Chat({ user }) {
     markAsSeen();
   }, [user?._id]);
 
-  // ✅ Send message
+  // ✅ Send message (with Cloudinary + no duplicates)
   async function sendMessage() {
     if ((!text.trim() && !image) || !user) return;
 
     const formData = new FormData();
     formData.append("room", room);
     formData.append("from", user.email);
+    if (socketRef.current?.id) {
+      formData.append("senderSocketId", socketRef.current.id);
+    }
     if (text) formData.append("text", text);
     if (image) formData.append("image", image);
 
+    // Show temporary message immediately (optimistic UI)
     const tempMsg = {
       _id: Date.now(),
       room,
@@ -105,8 +108,7 @@ export default function Chat({ user }) {
     setText("");
     setImage(null);
 
-    socketRef.current?.emit("sendMessage", { ...tempMsg, toRoom: room });
-
+    // ✅ Do NOT emit socket message directly (server will handle broadcasting)
     try {
       await fetch(`${API}/messages`, {
         method: "POST",
@@ -149,6 +151,8 @@ export default function Chat({ user }) {
                 <img
                   src={
                     m.image.startsWith("blob:")
+                      ? m.image
+                      : m.image.startsWith("http")
                       ? m.image
                       : `${SOCKET_URL}${m.image}`
                   }

@@ -18,7 +18,6 @@ export default function AdminChat({ adminToken }) {
     const socket = io(API.replace("/api", ""), { transports: ["websocket"] });
     socketRef.current = socket;
 
-    // ✅ Receive messages
     socket.on("receiveMessage", (msg) => {
       if (msg.room === selectedUser?.id) {
         setMessages((prev) =>
@@ -29,7 +28,6 @@ export default function AdminChat({ adminToken }) {
       }
     });
 
-    // ✅ Listen for when the USER actually reads messages
     socket.on("messagesSeen", (roomId) => {
       if (roomId === selectedUser?.id) {
         setMessages((prev) => prev.map((m) => ({ ...m, seen: true })));
@@ -37,21 +35,18 @@ export default function AdminChat({ adminToken }) {
       }
     });
 
-    // ✅ Typing indicators
     socket.on("typing", (data) => {
-      if (data.room === selectedUser?.id && data.from !== "admin")
-        setIsTyping(true);
+      if (data.room === selectedUser?.id && data.from !== "admin") setIsTyping(true);
     });
 
     socket.on("stopTyping", (data) => {
-      if (data.room === selectedUser?.id && data.from !== "admin")
-        setIsTyping(false);
+      if (data.room === selectedUser?.id && data.from !== "admin") setIsTyping(false);
     });
 
     return () => socket.disconnect();
   }, [selectedUser]);
 
-  // ✅ Fetch users (chat rooms)
+  // ✅ Fetch chat rooms
   useEffect(() => {
     fetch(`${API}/messages/rooms`)
       .then((r) => r.json())
@@ -59,21 +54,19 @@ export default function AdminChat({ adminToken }) {
       .catch(console.error);
   }, []);
 
-  // ✅ Load chat messages (without marking as seen)
+  // ✅ Load messages for selected user
   async function loadMessages(user) {
     setSelectedUser(user);
     try {
       const res = await fetch(`${API}/messages/${user.id}`);
       const data = await res.json();
       setMessages(data);
-      // ❌ Removed: socketRef.current.emit("markSeen", user.id);
-      // We only mark seen when the USER opens chat, not admin
     } catch (err) {
       console.error("Load messages error:", err);
     }
   }
 
-  // ✅ Auto scroll to bottom
+  // ✅ Auto scroll
   useEffect(() => {
     boxRef.current?.scrollTo({
       top: boxRef.current.scrollHeight,
@@ -81,7 +74,7 @@ export default function AdminChat({ adminToken }) {
     });
   }, [messages]);
 
-  // ✅ Typing events
+  // ✅ Typing indicator
   const handleTyping = () => {
     if (!selectedUser) return;
     socketRef.current.emit("typing", { room: selectedUser.id, from: "admin" });
@@ -95,7 +88,7 @@ export default function AdminChat({ adminToken }) {
     }, 1000);
   };
 
-  // ✅ Send message
+  // ✅ Send message (Cloudinary + dedupe-safe)
   async function sendMessage(e) {
     e.preventDefault();
     if ((!text.trim() && !image) || !selectedUser) return;
@@ -103,9 +96,13 @@ export default function AdminChat({ adminToken }) {
     const formData = new FormData();
     formData.append("room", selectedUser.id);
     formData.append("from", "admin");
+    if (socketRef.current?.id) {
+      formData.append("senderSocketId", socketRef.current.id);
+    }
     if (text) formData.append("text", text);
     if (image) formData.append("image", image);
 
+    // ✅ Temporary local message
     const tempMsg = {
       _id: Date.now(),
       from: "admin",
@@ -116,6 +113,7 @@ export default function AdminChat({ adminToken }) {
       delivered: true,
       seen: false,
     };
+
     setMessages((prev) => [...prev, tempMsg]);
     setText("");
     setImage(null);
@@ -124,8 +122,8 @@ export default function AdminChat({ adminToken }) {
       room: selectedUser.id,
       from: "admin",
     });
-    socketRef.current.emit("sendMessage", { ...tempMsg, toRoom: selectedUser.id });
 
+    // ❌ Don’t emit sendMessage directly — server broadcast handles it
     try {
       await fetch(`${API}/messages`, { method: "POST", body: formData });
     } catch (err) {
@@ -151,7 +149,7 @@ export default function AdminChat({ adminToken }) {
     }
   }
 
-  // ✅ Delete chat room
+  // ✅ Delete chat
   async function deleteChat() {
     if (!selectedUser) return alert("Select a user first");
     if (!window.confirm("❌ Delete this user's chat history?")) return;
@@ -171,11 +169,10 @@ export default function AdminChat({ adminToken }) {
     }
   }
 
-  // ✅ Delete user completely
+  // ✅ Delete user
   async function deleteUser() {
     if (!selectedUser) return alert("Select a user first");
-    if (!window.confirm("⚠️ Delete this user entirely? This cannot be undone!"))
-      return;
+    if (!window.confirm("⚠️ Delete this user entirely? This cannot be undone!")) return;
 
     try {
       const res = await fetch(`${API}/messages/remove-user/${selectedUser.id}`, {
@@ -249,26 +246,29 @@ export default function AdminChat({ adminToken }) {
             <div
               ref={boxRef}
               className="flex-1 border p-2 rounded mb-2 space-y-2 overflow-y-auto"
-               style={{ maxHeight: "300px", minHeight: "200px" }}
+              style={{ maxHeight: "300px", minHeight: "200px" }}
             >
               {messages.map((m) => (
                 <div
-          key={m._id}
-        className={`p-2 rounded max-w-[85%] md:max-w-[70%] wrap-break-word whitespace-pre-wrap ${
-        m.from === "admin"
-         ? "bg-green-500 text-white self-end ml-auto"
-         : "bg-gray-200 text-black"
-         }`}
-         >
+                  key={m._id}
+                  className={`p-2 rounded max-w-[85%] md:max-w-[70%] wrap-break-word whitespace-pre-wrap ${
+                    m.from === "admin"
+                      ? "bg-green-500 text-white self-end ml-auto"
+                      : "bg-gray-200 text-black"
+                  }`}
+                >
                   <div className="text-xs font-semibold mb-1 opacity-80">
                     {m.from === "admin"
                       ? "You (Admin)"
                       : selectedUser?.name || selectedUser?.email || "User"}
                   </div>
+
                   {m.image && (
                     <img
                       src={
                         m.image.startsWith("blob:")
+                          ? m.image
+                          : m.image.startsWith("http")
                           ? m.image
                           : `${API.replace("/api", "")}${m.image}`
                       }
@@ -276,14 +276,15 @@ export default function AdminChat({ adminToken }) {
                       className="w-32 h-32 object-cover rounded mb-1"
                     />
                   )}
+
                   {m.text && <div>{m.text}</div>}
+
                   <div className="text-xs mt-1 text-right opacity-75">
                     {formatTime(m.createdAt)}{" "}
                     {m.from === "admin" && (
                       <span style={{ color: m.seen ? "blue" : "inherit" }}>
-                    {m.seen ? "seen✅" : m.delivered ? "✅✅" : "✅"}
-                   </span>
-
+                        {m.seen ? "seen✅" : m.delivered ? "✅✅" : "✅"}
+                      </span>
                     )}
                   </div>
                 </div>
@@ -296,7 +297,10 @@ export default function AdminChat({ adminToken }) {
               )}
             </div>
 
-            <form onSubmit={sendMessage} className="flex flex-col sm:flex-row gap-2 items-center mt-auto">
+            <form
+              onSubmit={sendMessage}
+              className="flex flex-col sm:flex-row gap-2 items-center mt-auto"
+            >
               <input
                 type="file"
                 accept="image/*"
