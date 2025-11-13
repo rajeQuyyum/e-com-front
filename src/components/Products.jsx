@@ -107,18 +107,34 @@ export default function Products({ user }) {
               </div>
 
               {/* Product Info */}
-              <h4 className="font-semibold truncate">{p.title}</h4>
-              <p className="text-sm text-gray-600 my-2 line-clamp-2">{p.description}</p>
+             <h4 className="font-semibold truncate">{p.title}</h4>
 
-              <div className="flex items-center justify-between mt-4">
-                <div className="text-lg font-bold text-blue-700">₦{p.price.toFixed(2)}</div>
-                <button
-                  onClick={() => addToCart(p)}
-                  className="absolute bottom-4 right-4 px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 transition-all duration-200"
-                >
-                  Add to Cart
-                </button>
-              </div>
+<p className="text-sm text-gray-600 my-2 line-clamp-2">{p.description}</p>
+
+<div
+  className={`text-sm font-medium ${
+    p.stock > 0 ? "text-green-700" : "text-red-600"
+  }`}
+>
+  {p.stock > 0 ? `Available: ${p.stock}` : "Out of Stock"}
+</div>
+
+<div className="flex items-center justify-between mt-4">
+  <div className="text-lg font-bold text-blue-700">₦{p.price.toFixed(2)}</div>
+
+  <button
+    onClick={() => p.stock > 0 && addToCart(p)}
+    disabled={p.stock === 0}
+    className={`absolute bottom-4 right-4 px-3 py-1 text-white rounded transition-all duration-200 ${
+      p.stock === 0
+        ? "bg-gray-400 cursor-not-allowed"
+        : "bg-blue-600 hover:bg-blue-700"
+    }`}
+  >
+    {p.stock === 0 ? "Unavailable" : "Add to Cart"}
+  </button>
+</div>
+
             </div>
           );
         })}

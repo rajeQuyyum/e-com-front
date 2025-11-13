@@ -27,6 +27,8 @@ export default function AdminDashboard({ adminToken }) {
   const [productPrice, setProductPrice] = useState("");
   const [productDesc, setProductDesc] = useState("");
   const [productImages, setProductImages] = useState([]);
+  const [productStock, setProductStock] = useState("");
+
 
   const navigate = useNavigate();
 
@@ -54,43 +56,35 @@ export default function AdminDashboard({ adminToken }) {
   }
 
   // Product Upload
-  async function uploadProduct(e) {
-    e.preventDefault();
-    if (!productTitle || !productPrice || productImages.length === 0)
-      return alert("Please fill in all fields");
+async function uploadProduct(e) {
+  e.preventDefault();
+  if (!productTitle || !productPrice || productImages.length === 0)
+    return alert("Please fill in all fields");
 
-    const formData = new FormData();
-    formData.append("title", productTitle);
-    formData.append("price", productPrice);
-    formData.append("description", productDesc);
-    for (const img of productImages) formData.append("images", img);
+  const formData = new FormData();
+  formData.append("title", productTitle);
+  formData.append("price", productPrice);
+  formData.append("description", productDesc);
+  formData.append("stock", productStock);   // ⭐ ADDED THIS
 
-    try {
-      const res = await fetch(`${API}/products`, { method: "POST", body: formData });
-      if (!res.ok) throw new Error("Failed");
-      alert("✅ Product uploaded!");
-      setProductTitle("");
-      setProductPrice("");
-      setProductDesc("");
-      setProductImages([]);
-      loadData();
-    } catch (err) {
-      console.error("Upload error:", err);
-      alert("❌ Failed to upload");
-    }
+  for (const img of productImages) formData.append("images", img);
+
+  try {
+    const res = await fetch(`${API}/products`, { method: "POST", body: formData });
+    if (!res.ok) throw new Error("Failed");
+    alert("✅ Product uploaded!");
+
+    setProductTitle("");
+    setProductPrice("");
+    setProductDesc("");
+    setProductImages([]);
+    setProductStock("");    // ⭐ RESET STOCK
+    loadData();
+  } catch (err) {
+    console.error("Upload error:", err);
+    alert("❌ Failed to upload");
   }
-
-  async function deleteProduct(id) {
-    if (!window.confirm("Delete this product?")) return;
-    try {
-      const res = await fetch(`${API}/products/${id}`, { method: "DELETE" });
-      if (!res.ok) throw new Error("Failed");
-      alert("🗑️ Product deleted");
-      loadData();
-    } catch (err) {
-      console.error(err);
-    }
-  }
+}
 
   // Notifications
   async function saveNotification() {
@@ -270,130 +264,96 @@ export default function AdminDashboard({ adminToken }) {
       </div>
 
       {/* 🛍️ PRODUCT UPLOAD */}
-      <div className="bg-white p-4 rounded shadow mb-6">
-        <h4 className="font-semibold mb-3">Add New Product</h4>
-        <form onSubmit={uploadProduct} className="space-y-2">
-          <input
-            placeholder="Product Title"
-            value={productTitle}
-            onChange={(e) => setProductTitle(e.target.value)}
-            className="w-full p-2 border rounded"
-          />
-          <input
-            type="number"
-            placeholder="Price"
-            value={productPrice}
-            onChange={(e) => setProductPrice(e.target.value)}
-            className="w-full p-2 border rounded"
-          />
-          <textarea
-            placeholder="Description"
-            value={productDesc}
-            onChange={(e) => setProductDesc(e.target.value)}
-            className="w-full p-2 border rounded"
-          />
-          <input
-            type="file"
-            multiple
-            onChange={(e) => setProductImages(Array.from(e.target.files))}
-          />
-          <button
-            type="submit"
-            className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded"
-          >
-            Upload Product
-          </button>
-        </form>
+<div className="bg-white p-4 rounded shadow mb-6">
+  <h4 className="font-semibold mb-3">Add New Product</h4>
+  <form onSubmit={uploadProduct} className="space-y-2">
+    <input
+      placeholder="Product Title"
+      value={productTitle}
+      onChange={(e) => setProductTitle(e.target.value)}
+      className="w-full p-2 border rounded"
+    />
 
-        {/* Product list */}
-        <div className="mt-4 max-h-64 overflow-auto">
-          <h5 className="font-semibold mb-2">Existing Products</h5>
-          {products.map((p) => (
-            <div
-              key={p._id}
-              className="flex justify-between border-b py-2 items-center"
-            >
-              <div className="flex items-center gap-3">
-                {p.images?.[0] && (
-                 <img
-                  src={
-                     p.images[0].startsWith("http")
-                      ? p.images[0]
-                       : `${BASE_URL}${p.images[0]}`
-                   }
-                  alt={p.title}
-                   className="w-12 h-12 object-cover rounded"
-                 />
-                )}
+    <input
+      type="number"
+      placeholder="Price"
+      value={productPrice}
+      onChange={(e) => setProductPrice(e.target.value)}
+      className="w-full p-2 border rounded"
+    />
 
-                <div>
-                  <div className="font-semibold">{p.title}</div>
-                  <div className="text-sm text-gray-500">₦{p.price}</div>
-                </div>
-              </div>
-              <button
-                onClick={() => deleteProduct(p._id)}
-                className="text-red-600 hover:text-red-800"
-              >
-                🗑️
-              </button>
-            </div>
-          ))}
-        </div>
-      </div>
+    <textarea
+      placeholder="Description"
+      value={productDesc}
+      onChange={(e) => setProductDesc(e.target.value)}
+      className="w-full p-2 border rounded"
+    />
 
-      {/* USERS & CARTS */}
-      <div className="grid md:grid-cols-2 gap-6 mb-6">
-        <div className="bg-white p-4 rounded shadow">
-          <h4 className="font-semibold mb-2">Users</h4>
-          <div className="max-h-64 overflow-auto space-y-1">
-            {users.map((u) => (
-              <div
-                key={u._id}
-                className="flex justify-between text-sm border-b py-2"
-              >
-                <div
-                  onClick={() => openUserProfile(u)}
-                  className="cursor-pointer hover:bg-gray-50 pr-2 flex-1"
-                >
-                  {u.email}
-                </div>
-                <button
-                  onClick={() => deleteUser(u._id)}
-                  className="text-red-600 hover:text-red-800 px-2"
-                >
-                  🗑️
-                </button>
-              </div>
-            ))}
+    {/* ⭐ NEW STOCK INPUT */}
+    <input
+      type="number"
+      placeholder="Available Stock"
+      value={productStock}
+      onChange={(e) => setProductStock(e.target.value)}
+      className="w-full p-2 border rounded"
+    />
+
+    <input
+      type="file"
+      multiple
+      onChange={(e) => setProductImages(Array.from(e.target.files))}
+    />
+
+    <button
+      type="submit"
+      className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded"
+    >
+      Upload Product
+    </button>
+  </form>
+
+  {/* Product list */}
+  <div className="mt-4 max-h-64 overflow-auto">
+    <h5 className="font-semibold mb-2">Existing Products</h5>
+
+    {products.map((p) => (
+      <div
+        key={p._id}
+        className="flex justify-between border-b py-2 items-center"
+      >
+        <div className="flex items-center gap-3">
+          {p.images?.[0] && (
+            <img
+              src={
+                p.images[0].startsWith("http")
+                  ? p.images[0]
+                  : `${BASE_URL}${p.images[0]}`
+              }
+              alt={p.title}
+              className="w-12 h-12 object-cover rounded"
+            />
+          )}
+
+          <div>
+            <div className="font-semibold">{p.title}</div>
+            <div className="text-sm text-gray-500">₦{p.price}</div>
+
+            {/* ⭐ SHOW STOCK */}
+            <div className="text-xs text-gray-500">Stock: {p.stock}</div>
           </div>
         </div>
 
-        <div className="bg-white p-4 rounded shadow">
-          <h4 className="font-semibold mb-2">Carts</h4>
-          <div className="max-h-64 overflow-auto space-y-1">
-            {carts.map((c) => (
-              <div
-                key={c._id}
-                className="flex justify-between text-sm border-b py-2"
-              >
-                <div
-                  onClick={() => openCartModal(c)}
-                  className="flex-1 cursor-pointer hover:bg-gray-50 pr-2"
-                >
-                  {c.userId?.email || "Unknown"} — {c.items?.length || 0} items
-                </div>
-                <button
-                  onClick={() => deleteCart(c.userId?._id)}
-                  className="text-red-600 hover:text-red-800 px-2"
-                >
-                  🗑️
-                </button>
-              </div>
-            ))}
-          </div>
-        </div>
+        <button
+          onClick={() => deleteProduct(p._id)}
+          className="text-red-600 hover:text-red-800"
+        >
+          🗑️
+        </button>
       </div>
+    ))}
+  </div>
+</div>
+
 
       {/* NOTIFICATIONS */}
       <div className="bg-white p-4 rounded shadow mb-6">
